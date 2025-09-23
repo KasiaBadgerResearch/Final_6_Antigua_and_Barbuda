@@ -1,0 +1,51 @@
+# Does female survival to age 65 coincide with changes in male survival to age 65 in Antigua and Barbuda between 1960 and 2020?
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import os
+
+# Folders
+data_raw_folder = "data_raw/"
+data_clean_folder = "data_clean/"
+figures_folder = "figures/"
+
+# Load CSV
+filename = "health_ant_filtered.csv"  # Filtered dataset with only relevant rows
+df = pd.read_csv(os.path.join(data_raw_folder, filename))
+
+# Keep only needed columns
+df = df[["Year", "Indicator Name", "Value"]]
+
+# Convert Year and Value to numeric, drop invalid rows
+df["Year"] = pd.to_numeric(df["Year"], errors="coerce")
+df["Value"] = pd.to_numeric(df["Value"], errors="coerce")
+df = df.dropna(subset=["Year", "Value"])
+
+# Pivot indicators into separate columns
+df_pivot = df.pivot(index="Year", columns="Indicator Name", values="Value").reset_index()
+df_pivot = df_pivot.sort_values("Year")
+
+print("Pivoted Antigua and Barbuda dataset:")
+display(df_pivot)
+
+# Interpolate missing values for smooth plotting (optional)
+df_plot = df_pivot.interpolate(method='linear')
+
+# Plot the two indicators
+plt.figure(figsize=(10,6))
+plt.plot(df_plot["Year"], df_plot["Survival to age 65, female (% of cohort)"], 
+         marker='o', linestyle='-', label="Survival to age 65, female (% of cohort)")
+plt.plot(df_plot["Year"], df_plot["Survival to age 65, male (% of cohort)"], 
+         marker='o', linestyle='-', label="Survival to age 65, male (% of cohort)")
+
+plt.title("Antigua and Barbuda: Female Survival to Age 65 vs Male Survival to Age 65 (1960-2020)")
+plt.xlabel("Year")
+plt.ylabel("Percentage")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig(os.path.join(figures_folder, "antigua_and_barbuda_female_survival_age_65_vs_male_surival_age_65.png"))
+plt.show()
+
+# Save cleaned CSV
+df_pivot.to_csv(os.path.join(data_clean_folder, "antigua_and_barbuda_female_survival_age_65_vs_male_surival_age_65"), index=False)
